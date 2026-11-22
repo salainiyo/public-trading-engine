@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GOAT Prop Farm — Live Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:#0a0c0f;--bg1:#0f1218;--bg2:#141820;--bg3:#1a2030;
+    --border:#1e2638;--border2:#2a3450;--text:#c8d4e8;--text2:#7a8ba8;--text3:#4a5a78;
+    --green:#00e676;--red:#ff4757;--red2:#cc2233;--gold:#ffd700;
+    --blue:#4da6ff;--blue2:#2266cc;--amber:#ffb300;--purple:#9c6fef;
+    --c1:#4da6ff;--c2:#00e676;--c3:#ffd700;--c4:#c084fc;--c5:#fb923c;
+    --c6:#f472b6;--c7:#ff6b6b;--c8:#48dbfb;--c9:#ff9ff3;
+    --c10:#34e89e;--c11:#f093fb;--c12:#4facfe;
+    --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+    --radius:8px;--radius2:12px;--shadow:0 4px 20px rgba(0,0,0,.15);
+    --shadow-hover:0 8px 32px rgba(0,0,0,.3);--topbar-h:64px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;min-height:100%;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 120% 60% at 50% -10%,rgba(77,166,255,.04) 0%,transparent 70%);pointer-events:none;z-index:0}
+  .topbar{position:sticky;top:0;z-index:100;background:rgba(10,12,15,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);height:var(--topbar-h);display:flex;align-items:center;padding:0 24px;gap:16px}
+  .brand{display:flex;align-items:center;gap:12px;flex-shrink:0}
+  .brand-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px}
+  .brand-name{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:.05em;color:#fff}
+  .brand-sub{font-size:10px;color:var(--text3);letter-spacing:.15em;text-transform:uppercase}
+  .topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:nowrap}
+  .status-item{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--text2);flex-shrink:0}
+  .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
+  .pulse.offline{background:var(--red);animation:none}
+  .price-display{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--gold);flex-shrink:0;padding:0 8px}
+  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,230,118,.4)}50%{opacity:.7;box-shadow:0 0 0 5px rgba(0,230,118,0)}}
+
+  #ts-display{font-family:var(--mono);font-size:11px;color:var(--text3);flex-shrink:0}
+  .shell{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:24px 24px 40px}
+  .kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
+  .kpi{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius2);padding:14px 18px}
+  .kpi-label{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+  .kpi-value{font-family:var(--mono);font-size:22px;font-weight:600;color:#fff;display:block}
+  .kpi-value.pos{color:var(--green)}.kpi-value.neg{color:var(--red)}.kpi-value.gold{color:var(--gold)}
+  .kpi-sub{font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--mono)}
+  .strat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+  .strat-card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden;box-shadow:var(--shadow);transition:border-color .3s,transform .3s,box-shadow .3s;display:flex;flex-direction:column;flex:1;min-width:0}
+  .strat-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:var(--shadow-hover)}
+  .strat-card.c1{--accent:var(--c1)}.strat-card.c2{--accent:var(--c2)}.strat-card.c3{--accent:var(--c3)}
+  .strat-card.c4{--accent:var(--c4)}.strat-card.c5{--accent:var(--c5)}.strat-card.c6{--accent:var(--c6)}
+  .strat-card.c7{--accent:var(--c7)}.strat-card.c8{--accent:var(--c8)}.strat-card.c9{--accent:var(--c9)}
+  .strat-card.c10{--accent:var(--c10)}.strat-card.c11{--accent:var(--c11)}.strat-card.c12{--accent:var(--c12)}
+  .strat-card.c13{--accent:var(--c1)}.strat-card.c14{--accent:var(--c2)}.strat-card.c15{--accent:var(--c3)}.strat-card.c16{--accent:var(--c4)}
+  .card-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .card-title{display:flex;align-items:center;gap:10px}
+  .card-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex-shrink:0}
+  .card-name{font-family:var(--mono);font-size:14px;font-weight:600;color:#fff}
+  .phase-badge{font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:4px;letter-spacing:.08em;font-weight:600;white-space:nowrap}
+  .phase-1{background:rgba(255,179,0,.15);color:var(--amber);border:1px solid rgba(255,179,0,.3)}
+  .phase-2{background:rgba(77,166,255,.15);color:var(--blue);border:1px solid rgba(77,166,255,.3)}
+  .phase-3{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3)}
+  .blown-badge{background:rgba(255,71,87,.15);color:var(--red);border:1px solid rgba(255,71,87,.3);font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:4px}
+  .equity-section{padding:14px 16px}
+  .equity-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .equity-val{font-family:var(--mono);font-size:20px;font-weight:600;color:#fff}
+  .equity-change{font-family:var(--mono);font-size:12px;font-weight:500}
+  .equity-bar-wrap{height:6px;background:var(--bg3);border-radius:3px;position:relative;overflow:hidden}
+  .equity-bar{height:100%;border-radius:3px;background:var(--accent);transition:width .5s ease;min-width:2px}
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border-top:1px solid var(--border)}
+  .stat-cell{background:var(--bg1);padding:10px 12px}
+  .stat-cell-label{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+  .stat-cell-val{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--text)}
+  .stat-cell-val.pos{color:var(--green)}.stat-cell-val.neg{color:var(--red)}
+  .stat-cell-val.gold{color:var(--gold)}
+  .phase-progress{padding:10px 16px;border-top:1px solid var(--border)}
+  .prog-label{display:flex;justify-content:space-between;margin-bottom:6px}
+  .prog-text{font-size:10px;color:var(--text3);font-weight:500}
+  .prog-pct{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:600}
+  .prog-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+  .prog-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .5s ease}
+  .open-trade{margin:0 14px 6px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+  .trade-dir{font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px}
+  .trade-dir.long{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.2)}
+  .trade-dir.short{background:rgba(255,71,87,.15);color:var(--red);border:1px solid rgba(255,71,87,.2)}
+  .trade-info{font-family:var(--mono);font-size:11px;color:var(--text2)}
+  .sl-trailed{color:var(--amber);font-weight:600}
+  .trade-pnl{font-family:var(--mono);font-size:14px;font-weight:600}
+  .no-trade{margin:0 14px 6px;font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;padding:10px;background:rgba(26,32,48,.3);border-radius:var(--radius);border:1px dashed var(--border2)}
+  .ch-section{padding:8px 14px 14px;border-top:1px solid var(--border)}
+  .ch-section-header{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding-bottom:6px;font-weight:500}
+  .ch-list{display:flex;flex-direction:column;gap:2px}
+  .ch-row{display:grid;grid-template-columns:40px 1fr 1fr 1fr 58px 50px;gap:4px;padding:5px 8px;border-radius:3px;align-items:center;font-family:var(--mono);font-size:10px;color:var(--text2);transition:background .1s}
+  .ch-row:hover{background:var(--bg2)}
+  .ch-row.blown{opacity:.45}
+  .ch-row .ch-num{font-weight:600;color:var(--text)}
+  .ch-row .ch-eq{color:#fff}
+  .ch-row .ch-pnl.pos{color:var(--green)}
+  .ch-row .ch-pnl.neg{color:var(--red)}
+  .ch-row .ch-badge{text-align:center;font-size:8px;padding:1px 4px;border-radius:2px;font-weight:600}
+  .ch-row .ch-badge.p1{background:rgba(255,179,0,.12);color:var(--amber)}
+  .ch-row .ch-badge.p2{background:rgba(77,166,255,.12);color:var(--blue)}
+  .ch-row .ch-badge.p3{background:rgba(0,230,118,.12);color:var(--green)}
+  .ch-row .ch-badge.blown{background:rgba(255,71,87,.12);color:var(--red)}
+  .ch-row .ch-dir{font-weight:600;font-size:8px}
+  .ch-row .ch-dir.LONG{color:var(--green)}
+  .ch-row .ch-dir.SHORT{color:var(--red)}
+  .ch-sep{height:1px;background:rgba(42,52,80,.4);margin:4px 2px}
+  .ch-badge{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600;display:inline-block}
+  .ch-badge.p1{background:rgba(255,179,0,.12);color:var(--amber)}
+  .ch-badge.p2{background:rgba(77,166,255,.12);color:var(--blue)}
+  .ch-badge.p3{background:rgba(0,230,118,.12);color:var(--green)}
+  .ch-badge.blown{background:rgba(255,71,87,.12);color:var(--red)}
+  .bottom-row{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+  .panel{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius2);display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden}
+  .panel-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .panel-title{font-family:var(--mono);font-size:13px;font-weight:600;color:#fff;letter-spacing:.08em;text-transform:uppercase}
+  .panel-body{padding:16px;flex-grow:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+  .tradelog-panel .panel-body{padding:0;overflow:hidden}
+  .tl-scroll-wrap{overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0;max-height:320px}
+  .tl-scroll-wrap::-webkit-scrollbar{width:5px;height:5px}
+  .tl-scroll-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  .log-toggle{background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0}
+  .log-toggle:hover{border-color:var(--text3);color:var(--text)}
+  .log-toggle.on{background:var(--border2);color:var(--text);border-color:var(--text2)}
+  .log-panel{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius2);margin-top:16px;display:none;box-shadow:var(--shadow);overflow:hidden}
+  .log-panel.open{display:flex;flex-direction:column}
+  .log-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+  .log-header-title{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.08em;text-transform:uppercase}
+  .log-clear{background:none;border:none;color:var(--text3);font-family:var(--mono);font-size:10px;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .2s}
+  .log-clear:hover{color:var(--red);background:rgba(255,71,87,.1)}
+  .log-body{overflow-y:auto;max-height:240px;padding:8px 0;-webkit-overflow-scrolling:touch}
+  .log-body::-webkit-scrollbar{width:5px}
+  .log-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  .log-entry{font-family:var(--mono);font-size:11px;padding:3px 16px;color:var(--text2);white-space:pre-wrap;word-break:break-all;line-height:1.5}
+  .log-entry:hover{background:var(--bg2)}
+  .log-entry .ts{color:var(--text3)}.log-entry .lvl{font-weight:600;margin:0 4px}
+  .log-entry .lvl.INFO{color:var(--blue)}.log-entry .lvl.WARNING{color:var(--amber)}.log-entry .lvl.ERROR{color:var(--red)}
+  .log-entry .lvl.ORDER{color:var(--green)}.log-entry .lvl.DD{color:var(--red2)}.log-entry .msg{color:var(--text)}
+  .tl-inner{min-width:480px}
+  .tl-header{display:grid;grid-template-columns:80px 36px 72px 72px 72px 48px 72px 64px;gap:6px;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(20,24,32,.7);position:sticky;top:0;z-index:2}
+  .status-filter{display:flex;gap:4px;background:var(--bg2);border-radius:6px;padding:2px}
+  .sf-btn{background:transparent;border:none;color:var(--text3);font:inherit;font-size:11px;padding:4px 10px;border-radius:4px;cursor:pointer;transition:all .15s}
+  .sf-btn:hover{color:var(--text)}
+  .sf-btn.active{background:var(--border);color:var(--text);font-weight:600}
+  .tl-col{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+  .tl-row{display:grid;grid-template-columns:80px 36px 72px 72px 72px 48px 72px 64px;gap:6px;padding:9px 14px;border-bottom:1px solid rgba(30,38,56,.4);align-items:center;transition:background .15s}
+  .tl-row:hover{background:var(--bg2)}
+  .tl-cell{font-family:var(--mono);font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tl-cell.pos{color:var(--green)}.tl-cell.neg{color:var(--red)}
+  .footer{text-align:center;padding:20px 0 0;font-size:11px;color:var(--text3);font-family:var(--mono);border-top:1px solid var(--border);margin-top:32px}
+  @media(max-width:1400px){.strat-grid{flex-wrap:wrap}}
+  @media(max-width:1024px){.bottom-row{grid-template-columns:1fr}}
+  @media(max-width:768px){.topbar{flex-direction:column;align-items:flex-start;height:auto;padding:14px 16px;gap:12px}.topbar-right{width:100%;flex-wrap:wrap;gap:8px;margin-left:0}.shell{padding:16px 16px 32px}.kpi-row{grid-template-columns:repeat(3,1fr);gap:6px}.kpi{padding:8px 12px}.strat-grid{grid-template-columns:1fr}.bottom-row{grid-template-columns:1fr}}
+  @media(max-width:480px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">&#9889;</div>
+    <div>
+      <div class="brand-name">GOAT PROP FARM</div>
+      <div class="brand-sub">Multi-Challenge &#183; XAUUSD</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="status-item">
+      <div class="pulse" id="pulse"></div>
+      <span id="conn-label">DISCONNECTED</span>
+    </div>
+    <div id="ts-display">&#8212;</div>
+    <div class="price-display" id="price-display">&#8212;</div>
+    <button class="log-toggle" id="adminToggle" onclick="toggleAdmin()">&#9881; ADMIN</button>
+    <button class="log-toggle" onclick="logout()">LOGOUT</button>
+    <button class="log-toggle" id="logToggle" onclick="toggleLogs()">LOGS</button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Total Treasury</div><div class="kpi-value gold" id="kpi-treasury">$0</div><div class="kpi-sub">Per-strategy aggregate</div></div>
+    <div class="kpi"><div class="kpi-label">Payouts</div><div class="kpi-value gold" id="kpi-farmpl">$0</div><div class="kpi-sub">Phase 3 payouts only</div></div>
+    <div class="kpi"><div class="kpi-label">Total Spent</div><div class="kpi-value" id="kpi-spent" style="color:var(--text2)">$0</div><div class="kpi-sub">Challenge fees</div></div>
+    <div class="kpi"><div class="kpi-label">Active Challenges</div><div class="kpi-value gold" id="kpi-active">0</div><div class="kpi-sub">Running across farms</div></div>
+    <div class="kpi"><div class="kpi-label">Blown Challenges</div><div class="kpi-value" id="kpi-blown" style="color:var(--text2)">0</div><div class="kpi-sub">All time</div></div>
+    <div class="kpi"><div class="kpi-label">Open Trades</div><div class="kpi-value gold" id="kpi-trades">0</div><div class="kpi-sub">Open positions</div></div>
+  </div>
+
+  <div class="strat-grid" id="stratGrid"></div>
+
+  <div class="log-toggle" id="challengesToggle" onclick="toggleChallenges()" style="width:100%;text-align:center">CHALLENGES</div>
+  <div class="log-panel" id="challengesPanel">
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)">
+      <select id="ch-strat-filter" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font:inherit;font-size:12px">
+        <option value="">All Strategies</option>
+      </select>
+      <div class="status-filter" id="ch-status-filter">
+        <button class="sf-btn active" data-value="">All</button>
+        <button class="sf-btn" data-value="active">Active</button>
+        <button class="sf-btn" data-value="blown">Blown</button>
+      </div>
+      <span id="ch-count" style="color:var(--text3);font-family:var(--mono);font-size:11px"></span>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="tl-scroll-wrap" style="max-height:360px">
+        <div class="tl-inner" style="min-width:600px">
+          <div class="tl-header" style="grid-template-columns:36px 1fr 60px 1fr 1fr 50px 50px 1fr">
+            <span class="tl-col">#</span><span class="tl-col">Strategy</span><span class="tl-col">Phase</span>
+            <span class="tl-col">Equity</span><span class="tl-col">PnL</span><span class="tl-col">Days</span>
+            <span class="tl-col">Trade</span><span class="tl-col">Payouts</span>
+          </div>
+          <div id="challengelog"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-row">
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Monthly P&amp;L</span></div>
+      <div class="panel-body" style="padding:0"><div id="monthly-numbers-list" class="tl-scroll-wrap"></div></div>
+    </div>
+    <div class="panel tradelog-panel">
+      <div class="panel-header"><span class="panel-title">Recent Trades</span></div>
+      <div class="panel-body">
+        <div class="tl-scroll-wrap">
+          <div class="tl-inner">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)">
+              <select id="strat-filter" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font:inherit;font-size:12px">
+                <option value="">All Strategies</option>
+              </select>
+              <div class="status-filter" id="trade-status-filter">
+                <button class="sf-btn active" data-value="">All</button>
+                <button class="sf-btn" data-value="open">Open</button>
+                <button class="sf-btn" data-value="closed">Closed</button>
+              </div>
+              <span id="trade-count" style="color:var(--text3);font-family:var(--mono);font-size:11px"></span>
+            </div>
+            <div class="tl-header">
+              <span class="tl-col">Strategy</span><span class="tl-col">Dir</span>
+              <span class="tl-col">Entry</span><span class="tl-col">SL</span><span class="tl-col">TP</span>
+              <span class="tl-col">Lots</span><span class="tl-col">PnL</span>
+              <span class="tl-col">Date</span>
+            </div>
+            <div id="tradelog"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="log-toggle" id="dailyPnlToggle" onclick="toggleDailyPnl()" style="margin-top:16px;width:100%;text-align:center">DAILY P&amp;L</div>
+  <div class="log-panel" id="dailyPnlPanel">
+    <div class="log-header"><span class="log-header-title">Daily P&amp;L</span></div>
+    <div class="panel-body" id="dailyPnlBody" style="padding:0;display:flex;flex-direction:column">
+      <div class="tl-scroll-wrap" style="max-height:360px">
+        <div class="tl-inner" id="dailyPnlInner">
+          <div class="tl-header" style="grid-template-columns:1fr 1fr">
+            <span class="tl-col">Date</span><span class="tl-col">PnL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="log-toggle" id="parityToggle" onclick="toggleParity()" style="margin-top:16px;width:100%;text-align:center">PARITY &mdash; LIVE vs BACKTEST</div>
+  <div class="log-panel" id="parityPanel">
+    <div class="log-header">
+      <span class="log-header-title">Parity &mdash; Live vs Backtest</span>
+      <button class="log-clear" onclick="runParity()">RUN NOW</button>
+    </div>
+    <div class="panel-body" id="parityBody" style="padding:12px;font-family:var(--mono);font-size:12px"></div>
+  </div>
+
+  <div class="log-panel" id="logPanel">
+    <div class="log-header">
+      <span class="log-header-title">Event Log</span>
+      <button class="log-clear" onclick="clearLogs()">CLEAR</button>
+    </div>
+    <div class="log-body" id="logBody"></div>
+  </div>
+
+  <div class="log-panel" id="adminPanel">
+    <div class="log-header"><span class="log-header-title">&#9881; Credentials & Account Security</span></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:20px">
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Uploaded Challenge Credentials (1:1 &mdash; one account per strategy)</div>
+        <div id="credList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-family:var(--mono);font-size:12px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <select id="cred-strategy" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font:inherit;font-size:12px"></select>
+          <select id="cred-account" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font:inherit;font-size:12px">
+            <option value="1">first account</option>
+            <option value="2">second account</option>
+            <option value="3">third account</option>
+            <option value="4">fourth account</option>
+            <option value="5">fifth account</option>
+            <option value="6">sixth account</option>
+          </select>
+          <input id="cred-email" placeholder="email" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font:inherit;font-size:12px">
+          <input id="cred-server" placeholder="server (e.g. herofx.tradelocker.com)" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font:inherit;font-size:12px">
+          <input id="cred-password" type="password" placeholder="password" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font:inherit;font-size:12px">
+          <input id="cred-balance" type="number" step="0.01" placeholder="account balance (default 5000)" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font:inherit;font-size:12px">
+          <input id="cred-cost" type="number" step="0.01" placeholder="challenge cost (optional)" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font:inherit;font-size:12px">
+          <button onclick="uploadCreds()" style="background:#238636;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;padding:8px">Save credentials</button>
+        </div>
+        <button onclick="saveAndRestart()" style="margin-top:8px;width:100%;background:var(--blue2);color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;padding:8px">Save & Restart (applies uploaded credentials)</button>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Account Security</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <input id="pw-current" type="password" placeholder="current password" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font:inherit;font-size:12px">
+          <input id="pw-new" type="password" placeholder="new password (min 8 chars)" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font:inherit;font-size:12px">
+          <button onclick="changePassword()" style="background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font:inherit;font-size:12px;padding:8px">Change password</button>
+          <button onclick="logout()" style="background:var(--red2);color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;padding:8px">Logout</button>
+          <input id="recovery-email" placeholder="recovery email" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font:inherit;font-size:12px">
+          <button onclick="updateRecoveryEmail()" style="background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font:inherit;font-size:12px;padding:8px">Update recovery email</button>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:8px">Forgot your password? POST to /api/auth/recover from anywhere &mdash; a one-time code is emailed to the recovery address (or logged on the server if SMTP is not configured).</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">GOAT PROP FARM &#183; XAUUSD &#183; Multi-Strategy Multi-Broker</div>
+</div>
+
+<script>
+'use strict';
+var ws = null, state = null, reconnectTimer = null;
+var STRAT_COLORS = ['#4da6ff','#00e676','#ffd700','#c084fc','#fb923c','#f472b6','#ff6b6b','#48dbfb','#ff9ff3','#34e89e','#f093fb','#4facfe','#ffd93d','#6bcb77','#4d96ff','#ff6b6b'];
+
+function connect() {
+  var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  var url = proto + '//' + location.hostname + (location.port ? ':' + location.port : '') + '/ws/';
+  if (ws) { ws.close(); ws = null; }
+  ws = new WebSocket(url);
+  ws.onopen = function() {
+    setStatus(true);
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  };
+  ws.onmessage = function(e) {
+    try {
+      var msg = JSON.parse(e.data);
+      if (msg.type === 'snapshot' || msg.type === 'update') { state = msg.data; render(state); }
+      if (msg.type === 'log') { appendLog(msg); }
+    } catch(ex) {}
+  };
+  ws.onclose = function() {
+    setStatus(false);
+    reconnectTimer = setTimeout(connect, 5000);
+  };
+  ws.onerror = function() { ws.close(); };
+}
+
+function setStatus(online) {
+  document.getElementById('pulse').className = 'pulse' + (online ? '' : ' offline');
+  var label = document.getElementById('conn-label');
+  label.textContent = online ? 'LIVE' : 'DISCONNECTED';
+  label.style.color = online ? 'var(--green)' : 'var(--red2)';
+}
+
+function fmt(v, decimals) {
+  if (decimals === undefined) decimals = 2;
+  if (v == null) return '\u2014';
+  var abs = Math.abs(v).toFixed(decimals);
+  return (v < 0 ? '-$' : '$') + Number(abs).toLocaleString();
+}
+
+function render(data) {
+  document.getElementById('ts-display').textContent = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '\u2014';
+  document.getElementById('price-display').textContent = data.price ? 'XAUUSD ' + data.price.toFixed(2) : '\u2014';
+  var strategies = data.strategies || {};
+  var names = Object.keys(strategies).sort();
+  var filterEl = document.getElementById('strat-filter');
+  var currentVal = filterEl.value;
+  // Rebuild the options only when the strategy set changes — rebuilding every
+  // WS update closes a dropdown the user has open
+  var namesKey = names.join('|');
+  if (filterEl._namesKey !== namesKey) {
+    filterEl.innerHTML = '<option value="">All Strategies</option>' + names.map(function(n) { return '<option value="' + n + '">' + n + '</option>'; }).join('');
+    filterEl._namesKey = namesKey;
+    filterEl.value = currentVal;
+  }
+  var totalTreasury = 0, totalEarned = 0, totalSpent = 0;
+  var totalActive = 0, totalBlown = 0, totalTrades = 0;
+  var grid = document.getElementById('stratGrid');
+  grid.innerHTML = '';
+  names.forEach(function(name, i) {
+    var s = strategies[name];
+    totalTreasury += s.treasury || 0;
+    totalEarned += s.total_earned || 0;
+    totalSpent += s.total_spent || 0;
+    totalBlown += s.total_blown || 0;
+    totalActive += s.active_count || 0;
+    (s.challenges || []).forEach(function(ch) { var ots = ch.open_trades || (ch.open_trade ? [ch.open_trade] : []); totalTrades += ots.length; });
+    renderStratCard(name, s, i);
+  });
+  setKPI('kpi-treasury', totalTreasury, 'gold');
+  setKPI('kpi-farmpl', data.farm_total_payouts || 0, 'gold');
+  setKPI('kpi-spent', totalSpent, '');
+  document.getElementById('kpi-active').textContent = totalActive;
+  document.getElementById('kpi-blown').textContent = totalBlown;
+  document.getElementById('kpi-trades').textContent = totalTrades;
+  renderMonthlyNumbers(strategies);
+  renderChallenges(strategies);
+  renderTradeLog(strategies);
+  renderDailyPnl(data.farm_daily_pnl);
+  renderParity(data.parity);
+}
+
+function setKPI(id, val, cls) {
+  var el = document.getElementById(id);
+  el.textContent = fmt(val, 0);
+  el.className = 'kpi-value' + (cls ? ' ' + cls : '');
+}
+
+function sortChallenges(chs) {
+  var active = chs.filter(function(c) { return !c.blown; }).sort(function(a,b) { return a.challenge_num - b.challenge_num; });
+  var blown = chs.filter(function(c) { return c.blown; }).sort(function(a,b) { return b.challenge_num - a.challenge_num; });
+  var featured = active.shift() || null;
+  active.sort(function(a,b) { return b.challenge_num - a.challenge_num; });
+  return { featured: featured, remaining: active.concat(blown), hasActiveRemaining: active.length > 0 };
+}
+
+function renderStratCard(name, s, idx) {
+  var grid = document.getElementById('stratGrid');
+  var chs = s.challenges || [];
+  var sorted = sortChallenges(chs);
+  var f = sorted.featured || chs[0] || null;
+  var remaining = sorted.remaining;
+
+  var el = document.createElement('div');
+  el.className = 'strat-card c' + ((idx % 12) + 1);
+  el.id = 'card-' + name;
+
+  var modeBadge = '<span style="font-family:var(--mono);font-size:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);padding:2px 6px;border-radius:4px;margin-left:8px;vertical-align:middle;letter-spacing:.05em">RECURRING</span>';
+  var brokerBadge = s.broker ? '<span style="font-family:var(--mono);font-size:9px;background:rgba(77,166,255,.12);color:var(--blue);border:1px solid rgba(77,166,255,.25);padding:2px 6px;border-radius:4px;margin-left:4px;vertical-align:middle;letter-spacing:.05em;text-transform:uppercase">' + s.broker + '</span>' : '';
+
+  var phaseHtml, equityHtml, pp, progressHtml, tradeHtml;
+
+  if (!f) {
+    phaseHtml = '';
+    equityHtml = '<div class="equity-section"><div class="equity-row"><span class="equity-val">No challenges</span></div></div>';
+    pp = {pct: 0};
+    progressHtml = '';
+    tradeHtml = '';
+  } else {
+    var phaseCls = f.blown ? 'blown' : 'p' + f.phase;
+    var phaseTxt = f.blown ? 'BLOWN' : 'P' + f.phase + (f.phase === 3 ? ' \u2605' : '');
+    var badgeCls = f.blown ? 'blown-badge' : 'phase-badge phase-' + f.phase;
+    phaseHtml = '<span class="' + badgeCls + '">' + phaseTxt + '</span>';
+
+    pp = f.phase_progress || {pct: 0, phase: f.phase};
+    if (f.blown) {
+      equityHtml = '<div class="equity-section"><div class="equity-row"><span class="equity-val">' + fmt(f.equity) + '</span><span class="equity-change neg">BLOWN</span></div></div>';
+    } else if (pp.phase === 3) {
+      equityHtml = '<div class="equity-section"><div class="equity-row"><span class="equity-val">' + fmt(f.equity) + '</span><span class="equity-change gold">Funded \u2605</span></div>'
+        + '<div class="prog-bar" style="margin-top:6px"><div class="prog-fill" style="width:100%"></div></div></div>';
+    } else {
+      var phaseTargetAmt = f.balance * (1 + (pp.phase === 1 ? (f.phase1_target || 0.10) : (f.phase2_target || 0.05)));
+      var remainingAmt = Math.max(0, phaseTargetAmt - f.equity);
+      equityHtml = '<div class="equity-section"><div class="equity-row"><span class="equity-val">' + fmt(f.equity) + '</span><span class="equity-change" style="color:var(--text2);font-size:11px">Phase ' + pp.phase + ' &middot; ' + fmt(remainingAmt, 0) + ' remaining</span></div>'
+        + '<div class="prog-bar" style="margin-top:6px"><div class="prog-fill" style="width:' + pp.pct + '%"></div></div>'
+        + '<div style="display:flex;justify-content:space-between;margin-top:2px;font-size:10px;font-family:var(--mono);color:var(--text3)">'
+        + '<span>' + fmt(f.balance, 0) + '</span>'
+        + '<span>' + pp.pct + '%</span>'
+        + '<span>' + fmt(phaseTargetAmt, 0) + '</span></div></div>';
+    }
+    progressHtml = '';
+
+    var openTrades = f.open_trades || (f.open_trade ? [f.open_trade] : []);
+    if (openTrades.length > 0) {
+      tradeHtml = openTrades.map(function(t) {
+        var isPending = t.status === 'pending';
+        var displayPnl = t.unrealized_pnl != null ? t.unrealized_pnl : t.pnl;
+        var pnlLabel = isPending ? 'limit' : (t.unrealized_pnl != null ? '~' + fmt(t.unrealized_pnl) : (t.pnl != null ? fmt(t.pnl) : '\u2014'));
+        var pnlCls = isPending ? '' : ((displayPnl != null && displayPnl >= 0) ? 'pos' : 'neg');
+        var slHtml = t.sl ? t.sl.toFixed(2) : '\u2014';
+        var tpHtml = (t.tp && Math.abs(t.tp) < 1e8) ? t.tp.toFixed(2) : '\u2014';
+        if (t.sl && t._sl_dist && t.entry) {
+          var initialSl = t.direction === 1 ? t.entry - t._sl_dist : t.entry + t._sl_dist;
+          if (Math.abs(t.sl - initialSl) > 0.005) {
+            var arrow = t.direction === 1 ? ' \u2197' : ' \u2198';
+            slHtml = '<span class="sl-trailed" title="Trailed SL \u00b7 initial ' + initialSl.toFixed(2) + ' \u00b7 trail dist ' + t._sl_dist.toFixed(2) + '">SL ' + t.sl.toFixed(2) + arrow + '</span>';
+          }
+        }
+        var pendingBadge = isPending ? '<span style="font-family:var(--mono);font-size:9px;background:rgba(255,176,32,.15);color:var(--amber);border:1px solid rgba(255,176,32,.35);padding:1px 5px;border-radius:3px;margin-left:6px">PENDING</span>' : '';
+        return '<div class="open-trade">'
+          + '<div style="display:flex;align-items:center;gap:8px">'
+          + '<span class="trade-dir ' + (t.direction === 1 ? 'long' : 'short') + '">' + (t.direction === 1 ? 'LONG' : 'SHORT') + '</span>'
+          + '<span class="trade-info">' + (t.entry ? t.entry.toFixed(2) : '\u2014') + ' ' + slHtml + ' TP ' + tpHtml + ' \u00b7 ' + t.lots + 'L</span>'
+          + pendingBadge
+          + '</div>'
+          + '<span class="trade-pnl ' + pnlCls + '">' + (isPending ? '<span style="color:var(--amber);font-style:italic" title="Limit order placed, waiting for maker fill">limit</span>' : pnlLabel) + '</span>'
+          + '</div>';
+      }).join('');
+    } else {
+      tradeHtml = '<div class="no-trade">\u2014 No open position \u2014</div>';
+    }
+  }
+
+  var tradePnl = s.trade_pnl || 0;
+  var unrealizedPnl = s.unrealized_pnl || 0;
+  el.innerHTML = ''
+    + '<div class="card-header"><div class="card-title"><div class="card-dot"></div><div class="card-name">' + name + modeBadge + brokerBadge + '</div></div>' + phaseHtml + '</div>'
+    + equityHtml
+    + '<div class="stats-grid">'
+    + '<div class="stat-cell"><div class="stat-cell-label">Trade PnL</div><div class="stat-cell-val ' + (tradePnl >= 0 ? 'pos' : 'neg') + '">' + fmt(tradePnl) + '</div></div>'
+    + '<div class="stat-cell"><div class="stat-cell-label">Unrealized</div><div class="stat-cell-val ' + (unrealizedPnl >= 0 ? 'pos' : 'neg') + '">' + (unrealizedPnl !== 0 ? fmt(unrealizedPnl) : '\u2014') + '</div></div>'
+    + '<div class="stat-cell"><div class="stat-cell-label">Treasury</div><div class="stat-cell-val' + (s.treasury > 0 ? ' gold' : '') + '">' + fmt(s.treasury, 0) + '</div></div>'
+    + '<div class="stat-cell"><div class="stat-cell-label">Spent</div><div class="stat-cell-val">' + fmt(s.total_spent, 0) + '</div></div>'
+    + '<div class="stat-cell"><div class="stat-cell-label">Challenges</div><div class="stat-cell-val">' + (s.active_count || 0) + '/' + (s.total_challenges || chs.length) + '</div></div>'
+    + '<div class="stat-cell"><div class="stat-cell-label">Blown</div><div class="stat-cell-val ' + (s.total_blown > 0 ? 'neg' : '') + '">' + (s.total_blown || 0) + '</div></div>'
+    + '<div class="stat-cell"><div class="stat-cell-label">Win Rate</div><div class="stat-cell-val ' + (s.winrate != null && s.winrate >= 50 ? 'pos' : 'neg') + '">' + (s.winrate != null ? s.winrate + '%' : '\u2014') + '</div></div>'
+    + '</div>'
+    + progressHtml
+    + tradeHtml;
+
+  if (remaining.length > 0) {
+    var chHtml = '<div class="ch-section"><div class="ch-section-header">CHALLENGES (' + remaining.length + ')</div><div class="ch-list">';
+    var sepAdded = false;
+    remaining.forEach(function(ch) {
+      if (!sepAdded && ch.blown && sorted.hasActiveRemaining) {
+        chHtml += '<div class="ch-sep"></div>';
+        sepAdded = true;
+      }
+      var badgeCls = ch.blown ? 'blown' : ch.phase === 1 ? 'p1' : ch.phase === 2 ? 'p2' : 'p3';
+      var badgeTxt = ch.blown ? 'BLOWN' : 'P' + ch.phase;
+      var chOts = ch.open_trades || (ch.open_trade ? [ch.open_trade] : []);
+      var dirHtml = chOts.length > 0
+        ? chOts.map(function(ot) { return '<span class="ch-dir ' + (ot.direction === 1 ? 'LONG' : 'SHORT') + '">' + (ot.direction === 1 ? 'L' : 'S') + '</span>'; }).join(' ')
+        : '<span style="color:var(--text3)">-</span>';
+      chHtml += '<div class="ch-row' + (ch.blown ? ' blown' : '') + '">'
+        + '<span class="ch-num">#' + ch.challenge_num + '</span>'
+        + '<span class="ch-eq">' + fmt(ch.equity, 0) + '</span>'
+        + '<span class="ch-pnl ' + (ch.trade_pnl >= 0 ? 'pos' : 'neg') + '">' + fmt(ch.trade_pnl) + '</span>'
+        + '<span>' + (ch.trading_days || 0) + 'd</span>'
+        + '<span class="ch-badge ' + badgeCls + '">' + badgeTxt + '</span>'
+        + dirHtml + '</div>';
+    });
+    chHtml += '</div></div>';
+    el.innerHTML += chHtml;
+  }
+
+  grid.appendChild(el);
+}
+
+function renderMonthlyNumbers(strategies) {
+  var monthlyMap = {};
+  Object.values(strategies).forEach(function(c) {
+    Object.keys(c.monthly_stats || {}).forEach(function(m) {
+      if (!monthlyMap[m]) monthlyMap[m] = {earned: 0, spent: 0, trade_pnl: 0, withdrawn: 0, unrealized: 0};
+      monthlyMap[m].earned += c.monthly_stats[m].earned || 0;
+      monthlyMap[m].spent += c.monthly_stats[m].spent || 0;
+      monthlyMap[m].trade_pnl += c.monthly_stats[m].trade_pnl || 0;
+      monthlyMap[m].withdrawn += c.monthly_stats[m].withdrawn || 0;
+    });
+  });
+  var unrealizedTotal = 0;
+  Object.values(strategies).forEach(function(c) {
+    (c.challenges || []).forEach(function(ch) {
+      var ots = ch.open_trades || (ch.open_trade ? [ch.open_trade] : []);
+      ots.forEach(function(ot) {
+        if (ot.status !== 'pending' && ot.unrealized_pnl != null) unrealizedTotal += ot.unrealized_pnl;
+      });
+    });
+  });
+  var now = new Date();
+  var currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  if (!monthlyMap[currentMonth]) monthlyMap[currentMonth] = {earned: 0, spent: 0, trade_pnl: 0, withdrawn: 0, unrealized: 0};
+  monthlyMap[currentMonth].unrealized += unrealizedTotal;
+  var labels = Object.keys(monthlyMap).sort().reverse();
+  var el = document.getElementById('monthly-numbers-list');
+  if (!labels.length) {
+    el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">No monthly data yet</div>';
+    return;
+  }
+  var html = '<div class="tl-inner"><div class="tl-header" style="grid-template-columns:80px 1fr 1fr 70px 1fr 1fr">'
+    + '<span class="tl-col">Month</span><span class="tl-col">Realized</span><span class="tl-col">Unrealized</span><span class="tl-col">Spent</span><span class="tl-col">Withdrawn</span><span class="tl-col">Total</span></div>';
+  labels.forEach(function(m) {
+    var d = monthlyMap[m];
+    var total = d.trade_pnl + d.unrealized;
+    html += '<div class="tl-row" style="grid-template-columns:80px 1fr 1fr 70px 1fr 1fr">'
+      + '<span class="tl-cell" style="font-weight:600;color:var(--text)">' + m + '</span>'
+      + '<span class="tl-cell ' + (d.trade_pnl >= 0 ? 'pos' : 'neg') + '">' + fmt(d.trade_pnl) + '</span>'
+      + '<span class="tl-cell ' + (d.unrealized >= 0 ? 'pos' : 'neg') + '">' + (d.unrealized !== 0 ? fmt(d.unrealized) : '\u2014') + '</span>'
+      + '<span class="tl-cell" style="color:var(--text2)">' + fmt(d.spent) + '</span>'
+      + '<span class="tl-cell ' + (d.withdrawn > 0 ? 'gold' : '') + '">' + fmt(d.withdrawn) + '</span>'
+      + '<span class="tl-cell ' + (total >= 0 ? 'pos' : 'neg') + '" style="font-weight:600">' + fmt(total) + '</span></div>';
+  });
+  el.innerHTML = html + '</div>';
+}
+
+function renderChallenges(strategies) {
+  var allChs = [];
+  var tagColors = {};
+  var filterEl = document.getElementById('ch-strat-filter');
+  var activeFilter = filterEl ? filterEl.value : '';
+  var statusVal = (document.querySelector('#ch-status-filter .sf-btn.active') || {}).dataset.value || '';
+  Object.keys(strategies).forEach(function(name, i) { tagColors[name] = 'color:' + STRAT_COLORS[i % 12]; });
+  Object.entries(strategies).forEach(function(entry) {
+    var name = entry[0], c = entry[1];
+    if (activeFilter && name !== activeFilter) return;
+    (c.challenges || []).forEach(function(ch) {
+      allChs.push(Object.assign({}, ch, {stratName: name}));
+    });
+  });
+  allChs.sort(function(a, b) { return b.challenge_num - a.challenge_num; });
+  if (statusVal === 'active') allChs = allChs.filter(function(ch) { return !ch.blown; });
+  else if (statusVal === 'blown') allChs = allChs.filter(function(ch) { return ch.blown; });
+  var countEl = document.getElementById('ch-count');
+  if (countEl) countEl.textContent = allChs.length + ' challenges';
+  var rows = allChs.map(function(ch) {
+    var phaseCls = ch.blown ? 'blown' : 'p' + ch.phase;
+    var phaseTxt = ch.blown ? 'BLOWN' : 'P' + ch.phase;
+    var ots = ch.open_trades || (ch.open_trade ? [ch.open_trade] : []);
+    var dirHtml = ots.length > 0
+      ? ots.map(function(ot) { return '<span style="font-weight:600;color:' + (ot.direction === 1 ? 'var(--green)' : 'var(--red)') + '">' + (ot.direction === 1 ? 'L' : 'S') + '</span>'; }).join(' ')
+      : '<span style="color:var(--text3)">\u2014</span>';
+    var payoutCls = ch.total_payouts > 0 ? 'gold' : '';
+    return '<div class="tl-row" style="grid-template-columns:36px 1fr 60px 1fr 1fr 50px 50px 1fr">'
+      + '<span class="tl-cell" style="font-weight:600;color:var(--text)">' + ch.challenge_num + '</span>'
+      + '<span class="tl-cell" style="' + (tagColors[ch.stratName] || '') + ';font-weight:600">' + ch.stratName + '</span>'
+      + '<span class="tl-cell"><span class="ch-badge ' + phaseCls + '">' + phaseTxt + '</span></span>'
+      + '<span class="tl-cell" style="color:#fff">' + fmt(ch.equity) + '</span>'
+      + '<span class="tl-cell ' + (ch.trade_pnl >= 0 ? 'pos' : 'neg') + '">' + fmt(ch.trade_pnl) + '</span>'
+      + '<span class="tl-cell">' + (ch.trading_days || 0) + 'd</span>'
+      + '<span class="tl-cell">' + dirHtml + '</span>'
+      + '<span class="tl-cell ' + payoutCls + '">' + (ch.total_payouts > 0 ? fmt(ch.total_payouts, 0) : '\u2014') + '</span>'
+      + '</div>';
+  }).join('');
+  var logEl = document.getElementById('challengelog');
+  if (logEl) logEl.innerHTML = rows || '<div style="padding:24px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">No challenges</div>';
+}
+
+function toggleChallenges() {
+  var panel = document.getElementById('challengesPanel');
+  var btn = document.getElementById('challengesToggle');
+  panel.classList.toggle('open');
+  btn.classList.toggle('on', panel.classList.contains('open'));
+}
+
+function renderTradeLog(strategies) {
+  var allTrades = [];
+  var tagColors = {};
+  var filterEl = document.getElementById('strat-filter');
+  var activeFilter = filterEl.value;
+  var tradeStatusEl = document.getElementById('trade-status-filter');
+  var statusVal = '';
+  if (tradeStatusEl) {
+    var activeBtn = tradeStatusEl.querySelector('.sf-btn.active');
+    statusVal = activeBtn ? (activeBtn.dataset.value || '') : '';
+  }
+  Object.keys(strategies).forEach(function(name, i) { tagColors[name] = 'color:' + STRAT_COLORS[i % 12]; });
+  Object.entries(strategies).forEach(function(entry) {
+    var name = entry[0], c = entry[1];
+    if (activeFilter && name !== activeFilter) return;
+    (c.recent_trades || []).forEach(function(t) { allTrades.push(Object.assign({}, t, {stratName: name})); });
+  });
+  if (statusVal === 'open') {
+    allTrades = allTrades.filter(function(t) {
+      return t.status === 'open' || t.status === 'pending' || (!t.status && !t.close_time);
+    });
+  } else if (statusVal === 'closed') {
+    allTrades = allTrades.filter(function(t) {
+      return t.status === 'closed' || t.status === 'reconciled_unknown' || t.close_time;
+    });
+  }
+  allTrades.sort(function(a, b) {
+    var ta = (a.close_time || a.open_time || '');
+    var tb = (b.close_time || b.open_time || '');
+    return tb.localeCompare(ta);
+  });
+  document.getElementById('trade-count').textContent = allTrades.length + ' trades';
+  var rows = allTrades.slice(0, 30).map(function(t) {
+    var isOpen = t.status === 'open' || (!t.status && !t.close_time);
+    var isPending = t.status === 'pending';
+    var pnlCls = '', pnlDisplay = '', timeStr = '\u2014';
+    if (isPending) {
+      pnlDisplay = '<span style="color:var(--amber);font-style:italic" title="Limit order placed, waiting up to 3 bars for maker fill">pending</span>';
+    } else if (isOpen) {
+      var upnl = t.unrealized_pnl;
+      if (upnl != null) { pnlCls = upnl >= 0 ? 'pos' : 'neg'; pnlDisplay = '~' + fmt(upnl); }
+      else { pnlDisplay = '<span style="color:var(--text3);font-style:italic">open</span>'; }
+    } else if (t.pnl != null) { pnlCls = t.pnl >= 0 ? 'pos' : 'neg'; pnlDisplay = fmt(t.pnl); }
+    else { pnlDisplay = '<span style="color:var(--text3);font-style:italic">?</span>'; }
+    timeStr = t.close_time ? new Date(t.close_time).toLocaleDateString('en-GB', {month:'short',day:'2-digit'}) : '\u2014';
+    var slCls = 'color:var(--red2)';
+    var slCell = t.sl ? t.sl.toFixed(2) : '\u2014';
+    if (t.sl && t._sl_dist && t.entry) {
+      var iniSl = t.direction === 1 ? t.entry - t._sl_dist : t.entry + t._sl_dist;
+      if (Math.abs(t.sl - iniSl) > 0.005) {
+        slCls = 'color:var(--amber);font-weight:600';
+        slCell = t.sl.toFixed(2) + (t.direction === 1 ? ' \u2197' : ' \u2198');
+      }
+    }
+    var tpCell = (t.tp && Math.abs(t.tp) < 1e8) ? t.tp.toFixed(2) : '\u2014';
+    return '<div class="tl-row">'
+      + '<span class="tl-cell" style="' + (tagColors[t.stratName] || '') + ';font-weight:600">' + t.stratName + '</span>'
+      + '<span class="tl-cell" style="font-weight:600;color:' + (t.direction === 1 ? 'var(--green)' : 'var(--red)') + '">' + (t.direction === 1 ? 'L' : 'S') + '</span>'
+      + '<span class="tl-cell">' + (t.entry ? t.entry.toFixed(2) : '\u2014') + '</span>'
+      + '<span class="tl-cell" style="' + slCls + '" title="Trailed SL">' + slCell + '</span>'
+      + '<span class="tl-cell" style="color:var(--green)">' + tpCell + '</span>'
+      + '<span class="tl-cell">' + t.lots + '</span>'
+      + '<span class="tl-cell ' + pnlCls + '">' + pnlDisplay + '</span>'
+      + '<span class="tl-cell" style="color:var(--text3)">' + timeStr + '</span></div>';
+  }).join('');
+  document.getElementById('tradelog').innerHTML = rows || '<div style="padding:24px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">No trades yet</div>';
+}
+
+function renderDailyPnl(dailyPnl) {
+  var container = document.getElementById('dailyPnlInner');
+  var days = Object.keys(dailyPnl || {}).sort().reverse();
+  var html = '<div class="tl-header" style="grid-template-columns:1fr 1fr"><span class="tl-col">Date</span><span class="tl-col">PnL</span></div>';
+  if (days.length === 0) {
+    html += '<div style="padding:24px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">No closed trades yet</div>';
+  } else {
+    days.forEach(function(d) {
+      var pnl = dailyPnl[d];
+      html += '<div class="tl-row" style="grid-template-columns:1fr 1fr"><span class="tl-cell" style="font-weight:600;color:var(--text)">' + d + '</span><span class="tl-cell ' + (pnl >= 0 ? 'pos' : 'neg') + '">' + fmt(pnl) + '</span></div>';
+    });
+  }
+  container.innerHTML = html;
+}
+
+function toggleParity() {
+  var panel = document.getElementById('parityPanel');
+  var btn = document.getElementById('parityToggle');
+  panel.classList.toggle('open');
+  btn.classList.toggle('on', panel.classList.contains('open'));
+}
+
+function renderParity(parity) {
+  var body = document.getElementById('parityBody');
+  if (!body) return;
+  var reports = parity || {};
+  var names = Object.keys(reports).sort();
+  if (!names.length) {
+    body.textContent = 'No parity run yet \u2014 the checker runs automatically every 6h.';
+    return;
+  }
+  body.innerHTML = '';
+  names.forEach(function(name) {
+    var r = reports[name];
+    var ok = r.status === 'OK' || r.status === 'NO DATA';
+    var row = document.createElement('div');
+    row.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px';
+    var head = document.createElement('div');
+    head.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:4px';
+    var badge = document.createElement('span');
+    badge.textContent = r.status || '?';
+    badge.style.cssText = 'font-weight:700;color:' + (r.status === 'NO DATA' ? 'var(--gold)' : (ok ? 'var(--green2,#3fb950)' : 'var(--red2,#f85149)'));
+    var title = document.createElement('span');
+    title.textContent = name + (r.firm ? ' (' + r.firm + ')' : '');
+    title.style.cssText = 'color:var(--gold);font-weight:600';
+    head.appendChild(badge); head.appendChild(title);
+    if (r.error) {
+      var err = document.createElement('span');
+      err.textContent = r.error;
+      err.style.cssText = 'color:var(--red2,#f85149)';
+      head.appendChild(err);
+    }
+    row.appendChild(head);
+    var meta = document.createElement('div');
+    meta.style.cssText = 'color:var(--text3);line-height:1.5';
+    meta.textContent = 'live ' + (r.live_trades || 0) + ' | bt ' + (r.bt_trades || 0)
+      + ' | matched ' + (r.matched || 0) + ' | live-only ' + (r.live_only || 0)
+      + ' | bt-only ' + (r.bt_only || 0) + ' | expected ' + (r.expected_divergence || 0)
+      + ' | signal mism ' + (r.signal_mismatches || 0)
+      + ' | dEntry ' + (r.mean_entry_delta == null ? '\u2014' : r.mean_entry_delta)
+      + ' | dR ' + (r.mean_r_delta == null ? '\u2014' : r.mean_r_delta)
+      + ' | bars ' + (r.bars || 0);
+    row.appendChild(meta);
+    var when = document.createElement('div');
+    when.style.cssText = 'color:var(--text3);font-size:11px;margin-top:2px';
+    when.textContent = 'last run ' + (r.last_run ? new Date(r.last_run).toLocaleString() : '\u2014');
+    row.appendChild(when);
+    body.appendChild(row);
+  });
+}
+
+function runParity() {
+  fetch('/api/parity/run', {method: 'POST', credentials: 'same-origin'})
+    .then(function(r) {
+      if (r.status === 401) { location.href = '/login'; return null; }
+      return r.json();
+    }).then(function(d) {
+      if (d && d.ok) adminToast('Parity check started \u2014 results arrive with the next update', true);
+      else adminToast((d && d.error) || 'Parity run failed', false);
+    }).catch(function() { adminToast('Parity run failed', false); });
+}
+
+function toggleDailyPnl() {
+  var panel = document.getElementById('dailyPnlPanel');
+  var btn = document.getElementById('dailyPnlToggle');
+  panel.classList.toggle('open');
+  btn.classList.toggle('on', panel.classList.contains('open'));
+}
+
+document.addEventListener('change', function(e) {
+  if (e.target && (e.target.id === 'strat-filter' || e.target.id === 'ch-strat-filter') && state) render(state);
+});
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.sf-btn');
+  if (btn) {
+    btn.parentNode.querySelectorAll('.sf-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    if (state) render(state);
+  }
+});
+
+function toggleLogs() {
+  var panel = document.getElementById('logPanel');
+  var btn = document.getElementById('logToggle');
+  panel.classList.toggle('open');
+  btn.classList.toggle('on', panel.classList.contains('open'));
+}
+
+function clearLogs() { document.getElementById('logBody').innerHTML = ''; }
+
+function appendLog(msg) {
+  var body = document.getElementById('logBody');
+  var entry = document.createElement('div');
+  entry.className = 'log-entry';
+  // msg.text can carry external content (broker error pages, comments) —
+  // build the message with textContent, never innerHTML (XSS-safe)
+  if (msg.ts) {
+    var tsEl = document.createElement('span');
+    tsEl.className = 'ts'; tsEl.textContent = msg.ts;
+    entry.appendChild(tsEl); entry.appendChild(document.createTextNode(' '));
+  }
+  if (msg.level) {
+    var lvlEl = document.createElement('span');
+    lvlEl.className = 'lvl ' + msg.level; lvlEl.textContent = '[' + msg.level + ']';
+    entry.appendChild(lvlEl); entry.appendChild(document.createTextNode(' '));
+  }
+  var msgEl = document.createElement('span');
+  msgEl.className = 'msg'; msgEl.textContent = ' ' + (msg.text || '');
+  entry.appendChild(msgEl);
+  body.appendChild(entry);
+  if (document.getElementById('logPanel').classList.contains('open')) body.scrollTop = body.scrollHeight;
+}
+
+// ── Auth + Admin ─────────────────────────────────────────────────────────
+
+function adminToast(text, ok) {
+  var el = document.getElementById('adminToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'adminToast';
+    el.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:999;padding:10px 16px;border-radius:8px;font:inherit;font-size:12px;display:none;max-width:360px';
+    document.body.appendChild(el);
+  }
+  el.style.background = ok === false ? 'var(--red2)' : '#238636';
+  el.style.color = '#fff';
+  el.textContent = text;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(function() { el.style.display = 'none'; }, 5000);
+}
+
+function toggleAdmin() {
+  var panel = document.getElementById('adminPanel');
+  var btn = document.getElementById('adminToggle');
+  var open = panel.classList.toggle('open');
+  btn.classList.toggle('on', open);
+  if (open) { loadCreds(); }
+}
+
+function populateStrategyDropdown() {
+  var sel = document.getElementById('cred-strategy');
+  if (!sel || sel.options.length) return;
+  var names = state && state.strategies ? Object.keys(state.strategies).sort() : [];
+  sel.innerHTML = names.map(function(n) { return '<option value="' + n + '">' + n + '</option>'; }).join('');
+}
+
+function loadCreds() {
+  fetch('/api/credentials', {credentials: 'same-origin'}).then(function(r) {
+    if (r.status === 401) { location.href = '/login'; return null; }
+    return r.json();
+  }).then(function(d) {
+    if (!d) return;
+    var creds = d.credentials || {};
+    var list = document.getElementById('credList');
+    var tags = Object.keys(creds);
+    if (!tags.length) {
+      list.innerHTML = '<span style="color:var(--text3)">No uploaded credentials yet &mdash; the bot runs on the .env config.</span>';
+    } else {
+      list.innerHTML = tags.map(function(tag) {
+        var c = creds[tag];
+        var acct = c.account === 1 ? 'first' : c.account === 2 ? 'second' : (c.account || '?') + 'th';
+        var esc = function(s) {
+          return String(s == null ? '' : s).replace(/&/g, '&').replace(/</g, '<')
+            .replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, '&#39;');
+        };
+        var safeTag = esc(tag);
+        return '<div style="display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 10px">'
+          + '<span style="color:var(--gold);font-weight:600">' + safeTag + '</span>'
+          + '<span style="color:var(--text2)">' + esc(c.email || '?') + '</span>'
+          + '<span style="color:var(--text3)">' + esc(c.server || '') + '</span>'
+          + '<span style="color:var(--text2)">account: ' + esc(acct) + '</span>'
+          + (c.balance != null ? '<span style="color:var(--text2)">balance: $' + esc(c.balance) + '</span>' : '')
+          + '<span style="color:var(--text3)">' + esc(c.password_hint || '') + '</span>'
+          + '<button onclick="deleteCred(this.dataset.tag)" data-tag="' + safeTag + '" style="margin-left:auto;background:var(--red2);color:#fff;border:none;border-radius:4px;cursor:pointer;font:inherit;font-size:11px;padding:4px 8px">DELETE</button>'
+          + '</div>';
+      }).join('');
+    }
+    var recEl = document.getElementById('recovery-email');
+    if (recEl && !recEl.value && d.recovery_email) recEl.value = d.recovery_email;
+    populateStrategyDropdown();
+  }).catch(function() {});
+}
+
+function uploadCreds() {
+  var body = {
+    strategy: document.getElementById('cred-strategy').value,
+    email: document.getElementById('cred-email').value.trim(),
+    password: document.getElementById('cred-password').value,
+    server: document.getElementById('cred-server').value.trim(),
+    account: document.getElementById('cred-account').value,
+    balance: document.getElementById('cred-balance').value.trim(),
+    challenge_cost: document.getElementById('cred-cost').value.trim()
+  };
+  if (!body.strategy || !body.email || !body.password || !body.server) {
+    adminToast('All fields are required', false); return;
+  }
+  fetch('/api/credentials', {method: 'POST', credentials: 'same-origin',
+    headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+  }).then(function(r) { return r.json().then(function(d) { return {status: r.status, d: d}; }); })
+    .then(function(res) {
+      if (res.status === 401) { location.href = '/login'; return; }
+      if (res.d && res.d.ok) {
+        adminToast('Credentials saved for ' + body.strategy + ' (account: ' + body.account + '). Use Save & Restart to apply.', true);
+        document.getElementById('cred-password').value = '';
+        loadCreds();
+      } else {
+        adminToast((res.d && res.d.error) || 'Save failed', false);
+      }
+    }).catch(function() { adminToast('Save failed', false); });
+}
+
+function deleteCred(tag) {
+  fetch('/api/credentials/' + encodeURIComponent(tag), {method: 'DELETE', credentials: 'same-origin'})
+    .then(function(r) {
+      if (r.status === 401) { location.href = '/login'; return null; }
+      return r.json();
+    })
+    .then(function(d) {
+      if (!d) return;
+      adminToast('Removed credentials for ' + tag + ' — restart to apply', true);
+      loadCreds();
+    }).catch(function() { adminToast('Delete failed', false); });
+}
+
+function saveAndRestart() {
+  if (!confirm('Restart the bot now? Uploaded credentials will be applied; the bot comes back in ~10s and state is preserved.')) return;
+  fetch('/api/restart', {method: 'POST', credentials: 'same-origin'})
+    .then(function(r) {
+      if (r.status === 401) { location.href = '/login'; return null; }
+      adminToast('Restarting...', true);
+    })
+    .catch(function() { adminToast('Restart request failed', false); });
+}
+
+function changePassword() {
+  var current = document.getElementById('pw-current').value;
+  var nw = document.getElementById('pw-new').value;
+  if (!current || nw.length < 8) { adminToast('Current password required; new must be 8+ chars', false); return; }
+  fetch('/api/auth/change', {method: 'POST', credentials: 'same-origin',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({current_password: current, new_password: nw})
+  }).then(function(r) { return r.json().then(function(d) { return {status: r.status, d: d}; }); })
+    .then(function(res) {
+      if (res.status === 401) { location.href = '/login'; return; }
+      if (res.d && res.d.ok) {
+        adminToast('Password changed — all sessions invalidated', true);
+        document.getElementById('pw-current').value = '';
+        document.getElementById('pw-new').value = '';
+      } else {
+        adminToast((res.d && res.d.error) || 'Change failed', false);
+      }
+    }).catch(function() { adminToast('Change failed', false); });
+}
+
+function updateRecoveryEmail() {
+  var email = document.getElementById('recovery-email').value.trim();
+  if (!email || email.indexOf('@') < 0) { adminToast('Enter a valid email', false); return; }
+  fetch('/api/auth/recovery-email', {method: 'POST', credentials: 'same-origin',
+    headers: {'Content-Type': 'application/json'}, body: JSON.stringify({recovery_email: email})
+  }).then(function(r) { return r.json().then(function(d) { return {status: r.status, d: d}; }); })
+    .then(function(res) {
+      if (res.status === 401) { location.href = '/login'; return; }
+      if (res.d && res.d.ok) { adminToast('Recovery email updated to ' + email, true); }
+      else { adminToast((res.d && res.d.error) || 'Update failed', false); }
+    }).catch(function() { adminToast('Update failed', false); });
+}
+
+function logout() {
+  fetch('/logout', {method: 'POST', credentials: 'same-origin'})
+    .then(function() { location.href = '/login'; })
+    .catch(function() { location.href = '/login'; });
+}
+
+// Auth gate: redirect to /login when a password is set and no valid session
+fetch('/auth-check', {credentials: 'same-origin'}).then(function(r) {
+  if (r.status === 401) { location.href = '/login'; return; }
+  connect();
+}).catch(function() { connect(); });
+</script>
+</body>
+</html>
