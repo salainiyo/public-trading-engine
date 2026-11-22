@@ -1,5 +1,9 @@
 # Public Trading Engine
 
+[![CI](https://github.com/salainiyo/public-trading-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/salainiyo/public-trading-engine/actions/workflows/ci.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A single-strategy, single-broker trading bot for a funded-account challenge.
 It watches H1 XAUUSD, generates signals from a rule-based strategy, manages
 positions and challenge rules (drawdowns, targets, valid trading days), and
@@ -40,6 +44,24 @@ settings above.
 Common rules: 3 valid trading days per phase, 14-day payout cycle, and
 payouts retain the remaining equity in the account.
 
+## Architecture
+
+```text
+Broker API (TradeLocker)
+        │  quotes / bars / orders
+        ▼
+   main.py ── bar pipeline ──► engine/signals.py (Supertrend RSI)
+        │                        engine/indicators.py (ATR10, RSI14, 20-bar extremes)
+        │
+        ├──► engine/strategy_runner.py ── challenge state, sizing, SL/TP, payouts
+        ├──► engine/reconciler.py ─────── broker ↔ local trade state
+        ├──► parity/ ──────────────────── live vs backtest trade comparison
+        └──► events/websocket_broadcaster.py ──► dashboard/index.html (localhost:8765)
+
+Persistence: database/trade_store.py, database/treasury_store.py (SQLite under bot/data/)
+Credentials: config/credentials.py (AES-GCM), config/tokens.py, config/loader.py
+```
+
 ## Quick start
 
 Python 3.12 is required.
@@ -55,11 +77,22 @@ python main.py
 
 The dashboard is then available at http://localhost:8765/.
 
+## Configuration
+
+All runtime configuration lives in `.env` (see `.env.example`) and in the
+farm definitions at `engine/market.py:GOAT_FIRM_5K_PROFILE`,
+`AQUA_FIRM_5K_PROFILE`, `FP_FIRM_5K_PROFILE` and `engine/market.py:FARMS`.
+Farms are the only place strategy, stop mode, RR, risk and concurrency are
+configured. Broker credentials use the `GOAT_*` variable names for
+compatibility; they apply to all three firm farms.
+
 ## Tests
 
 ```bash
 python3 -m pytest tests/unit/ tests/integration/ -v
 ```
+
+CI runs the same command on every push and pull request to `main`.
 
 ## Standalone backtest
 
@@ -84,3 +117,12 @@ The dashboard is exposed only on localhost port 8765.
   fills and commission.
 - Both live and backtest enter at the next bar's open; live fills depend on
   the broker's execution speed and session availability.
+
+## Roadmap
+
+- Optional broker adapters beyond the current single broker.
+- Automated strategy-report generation from the standalone backtest.
+- Historical parity dashboards for live-vs-backtest drift.
+
+See [CHANGELOG.md](CHANGELOG.md), [CONTRIBUTING.md](CONTRIBUTING.md) and
+[SECURITY.md](SECURITY.md).
